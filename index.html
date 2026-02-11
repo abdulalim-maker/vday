@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -64,13 +64,41 @@
     #result {
       display: none;
       margin-top: 18px;
+      position: relative;
+      z-index: 2;
     }
 
     img {
       max-width: 220px;
       border-radius: 14px;
       box-shadow: 0 10px 28px rgba(124,58,237,0.35);
-      margin-top: 8px;
+      margin-top: 10px;
+      opacity: 0;
+      transform: scale(0.7);
+      animation: popIn 0.5s ease-out forwards;
+    }
+
+    @keyframes popIn {
+      0% { opacity: 0; transform: scale(0.6); }
+      70% { opacity: 1; transform: scale(1.05); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    /* Floating hearts */
+    .heart {
+      position: fixed;
+      bottom: -20px;
+      font-size: 20px;
+      animation: floatUp 4s linear forwards;
+      opacity: 0.8;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    @keyframes floatUp {
+      0% { transform: translateY(0) scale(1); opacity: 0; }
+      10% { opacity: 1; }
+      100% { transform: translateY(-110vh) scale(1.4); opacity: 0; }
     }
 
     #explosion {
@@ -97,12 +125,6 @@
       pointer-events: all;
       transform: scale(1.15);
       animation: blastShake 0.18s linear infinite;
-    }
-
-    .boom-text {
-      font-size: 18px;
-      margin-top: 10px;
-      opacity: 0.9;
     }
 
     @keyframes blastShake {
@@ -134,17 +156,10 @@
 
   <div id="result">
     <h2 id="result-text"></h2>
-    <img id="meme" src="" alt="meme" />
+    <img id="meme" src="" alt="cute" />
   </div>
 
-  <div id="explosion">
-    💥 BOOM 💥
-    <div class="boom-text">you chose chaos</div>
-  </div>
-
-  <audio id="boom-sound" preload="auto">
-    <source src="https://www.myinstants.com/media/sounds/explosion.mp3" type="audio/mpeg">
-  </audio>
+  <div id="explosion">💥 BOOM 💥</div>
 
   <script>
     const noBtn = document.getElementById("no");
@@ -155,7 +170,6 @@
     const gameArea = document.getElementById("game-area");
     const timerText = document.getElementById("timer");
     const explosion = document.getElementById("explosion");
-    const boomSound = document.getElementById("boom-sound");
 
     let startTime = null;
     let rafId = null;
@@ -164,10 +178,8 @@
     function moveNoButton() {
       const areaRect = gameArea.getBoundingClientRect();
       const btnRect = noBtn.getBoundingClientRect();
-
       const maxX = areaRect.width - btnRect.width;
       const maxY = areaRect.height - btnRect.height;
-
       noBtn.style.left = Math.random() * maxX + "px";
       noBtn.style.top = Math.random() * maxY + "px";
     }
@@ -196,35 +208,34 @@
       e.preventDefault();
     }, { passive: false });
 
+    function spawnHeart() {
+      const heart = document.createElement("div");
+      heart.className = "heart";
+      heart.textContent = "💗";
+      heart.style.left = Math.random() * 100 + "vw";
+      heart.style.fontSize = 16 + Math.random() * 24 + "px";
+      document.body.appendChild(heart);
+      setTimeout(() => heart.remove(), 4000);
+    }
+
     yesBtn.addEventListener("click", () => {
       gameOver = true;
       cancelAnimationFrame(rafId);
       const timeText = timerText.textContent.replace("Time: ", "");
       result.style.display = "block";
       resultText.textContent = `LESSSGOOO ❤️ only took you ${timeText}`;
-      meme.src = "https://media.giphy.com/media/MDJ9IbxxvDUQM/giphy.gif";
+      meme.src = "yuki.jpeg";
+
+      for (let i = 0; i < 25; i++) {
+        setTimeout(spawnHeart, i * 120);
+      }
     });
 
     noBtn.addEventListener("click", () => {
       gameOver = true;
       cancelAnimationFrame(rafId);
-
       explosion.classList.add("show");
-
-      boomSound.currentTime = 0;
-      boomSound.play().catch(() => {});
-
-      if (navigator.vibrate) {
-        navigator.vibrate([80, 40, 120, 40, 200]);
-      }
-
-      setTimeout(() => {
-        explosion.classList.remove("show");
-        const timeText = timerText.textContent.replace("Time: ", "");
-        result.style.display = "block";
-        resultText.textContent = `BOOM 💥 you actually clicked No (${timeText})`;
-        meme.src = "https://media.giphy.com/media/MDJ9IbxxvDUQM/giphy.gif";
-      }, 1200);
+      setTimeout(() => explosion.classList.remove("show"), 1200);
     });
   </script>
 
