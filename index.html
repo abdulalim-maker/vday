@@ -2,10 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dodge the No Button</title>
+
   <style>
     body {
-      height: 100vh;
+      min-height: 100dvh;
       margin: 0;
       display: flex;
       flex-direction: column;
@@ -16,18 +18,11 @@
       color: #3b0764;
       text-align: center;
       overflow: hidden;
+      -webkit-tap-highlight-color: transparent;
     }
 
-    h1 {
-      margin-bottom: 6px;
-      letter-spacing: 0.3px;
-    }
-
-    #timer {
-      font-size: 14px;
-      opacity: 0.8;
-      margin-bottom: 12px;
-    }
+    h1 { margin-bottom: 6px; }
+    #timer { font-size: 14px; opacity: 0.8; margin-bottom: 12px; }
 
     #game-area {
       position: relative;
@@ -37,18 +32,9 @@
       background: linear-gradient(180deg, #ffffff, #fdf4ff);
       border-radius: 22px;
       box-shadow: 0 20px 60px rgba(124,58,237,0.25);
-      padding-top: 24px;
       border: 1px solid rgba(124,58,237,0.15);
+      overflow: hidden;
     }
-    #signature {
-        position: fixed;
-        bottom: 14px;
-        opacity: 0.6;
-        font-size: 12px;
-        letter-spacing: 0.3px;
-        color: #6b21a8;
-    }
-
 
     .btn {
       padding: 12px 22px;
@@ -57,8 +43,8 @@
       border-radius: 999px;
       cursor: pointer;
       position: absolute;
-      transition: box-shadow 0.12s ease, transform 0.12s ease;
       box-shadow: 0 10px 22px rgba(124,58,237,0.25);
+      touch-action: manipulation;
     }
 
     #yes {
@@ -68,16 +54,11 @@
       top: 220px;
     }
 
-    #yes:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 14px 28px rgba(236,72,153,0.45);
-    }
-
     #no {
       background: linear-gradient(135deg, #e9d5ff, #fbcfe8);
       color: #581c87;
-      left: 300px;   /* 👈 important: fixed initial position */
-      top: 220px;    /* 👈 important: fixed initial position */
+      left: 260px;
+      top: 220px;
     }
 
     #result {
@@ -91,12 +72,58 @@
       box-shadow: 0 10px 28px rgba(124,58,237,0.35);
       margin-top: 8px;
     }
+
+    #explosion {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at center, #fff7cc 0%, #ffd000 10%, #ff7a00 25%, #ff0000 40%, #2b0000 60%, #000 80%);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      font-size: 52px;
+      font-weight: 800;
+      color: white;
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.8);
+      transition: all 0.25s ease-out;
+      z-index: 999;
+      text-align: center;
+    }
+
+    #explosion.show {
+      opacity: 1;
+      pointer-events: all;
+      transform: scale(1.15);
+      animation: blastShake 0.18s linear infinite;
+    }
+
+    .boom-text {
+      font-size: 18px;
+      margin-top: 10px;
+      opacity: 0.9;
+    }
+
+    @keyframes blastShake {
+      0% { transform: translate(0, 0) scale(1.15); }
+      25% { transform: translate(12px, -12px) scale(1.15); }
+      50% { transform: translate(-12px, 12px) scale(1.15); }
+      75% { transform: translate(12px, 12px) scale(1.15); }
+      100% { transform: translate(0, 0) scale(1.15); }
+    }
+
+    #signature {
+      position: fixed;
+      bottom: 14px;
+      font-size: 12px;
+      opacity: 0.6;
+    }
   </style>
 </head>
 
-
 <body>
-  <h1>will u be my valentine ? </h1>
+  <h1>will u be my valentine?</h1>
   <h2>click the correct button 😌</h2>
   <div id="timer">Time: 0.0s</div>
 
@@ -110,6 +137,15 @@
     <img id="meme" src="" alt="meme" />
   </div>
 
+  <div id="explosion">
+    💥 BOOM 💥
+    <div class="boom-text">you chose chaos</div>
+  </div>
+
+  <audio id="boom-sound" preload="auto">
+    <source src="https://www.myinstants.com/media/sounds/explosion.mp3" type="audio/mpeg">
+  </audio>
+
   <script>
     const noBtn = document.getElementById("no");
     const yesBtn = document.getElementById("yes");
@@ -118,6 +154,8 @@
     const meme = document.getElementById("meme");
     const gameArea = document.getElementById("game-area");
     const timerText = document.getElementById("timer");
+    const explosion = document.getElementById("explosion");
+    const boomSound = document.getElementById("boom-sound");
 
     let startTime = null;
     let rafId = null;
@@ -127,14 +165,11 @@
       const areaRect = gameArea.getBoundingClientRect();
       const btnRect = noBtn.getBoundingClientRect();
 
-      const maxX = areaRect.width - btnRect.width - 12;
-      const maxY = areaRect.height - btnRect.height - 12;
+      const maxX = areaRect.width - btnRect.width;
+      const maxY = areaRect.height - btnRect.height;
 
-      const x = Math.random() * maxX + 6;
-      const y = Math.random() * maxY + 6;
-
-      noBtn.style.left = x + "px";
-      noBtn.style.top = y + "px";
+      noBtn.style.left = Math.random() * maxX + "px";
+      noBtn.style.top = Math.random() * maxY + "px";
     }
 
     function tick(ts) {
@@ -148,14 +183,12 @@
       if (!startTime) requestAnimationFrame(tick);
     }
 
-    // Hover (desktop)
     noBtn.addEventListener("mouseenter", () => {
       if (gameOver) return;
       startTimerOnce();
       moveNoButton();
     });
 
-    // Touch (mobile)
     noBtn.addEventListener("touchstart", (e) => {
       if (gameOver) return;
       startTimerOnce();
@@ -166,7 +199,6 @@
     yesBtn.addEventListener("click", () => {
       gameOver = true;
       cancelAnimationFrame(rafId);
-
       const timeText = timerText.textContent.replace("Time: ", "");
       result.style.display = "block";
       resultText.textContent = `LESSSGOOO ❤️ only took you ${timeText}`;
@@ -177,12 +209,25 @@
       gameOver = true;
       cancelAnimationFrame(rafId);
 
-      const timeText = timerText.textContent.replace("Time: ", "");
-      result.style.display = "block";
-      resultText.textContent = `Okay damn… I guess you don't want the best for yourself this year 😭 (${timeText})`;
-      meme.src = "https://media.giphy.com/media/3o6ZtaO9BZHcOjmErm/giphy.gif";
+      explosion.classList.add("show");
+
+      boomSound.currentTime = 0;
+      boomSound.play().catch(() => {});
+
+      if (navigator.vibrate) {
+        navigator.vibrate([80, 40, 120, 40, 200]);
+      }
+
+      setTimeout(() => {
+        explosion.classList.remove("show");
+        const timeText = timerText.textContent.replace("Time: ", "");
+        result.style.display = "block";
+        resultText.textContent = `BOOM 💥 you actually clicked No (${timeText})`;
+        meme.src = "https://media.giphy.com/media/MDJ9IbxxvDUQM/giphy.gif";
+      }, 1200);
     });
   </script>
+
   <div id="signature">💗 AAA</div>
 </body>
 </html>
